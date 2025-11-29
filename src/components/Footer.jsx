@@ -1,7 +1,7 @@
 const Footer = () => {
   return (
     <footer className="footer">
-      <p>© 2025 Student Mental Health Support Platform</p>
+      <p>© Student Mental Health Support Platform Developed by Team SDP-09</p>
     </footer>
   );
 };

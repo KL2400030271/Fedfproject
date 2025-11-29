@@ -4,6 +4,7 @@ const userLinks = [
   { path: '/dashboard', label: 'Dashboard' },
   { path: '/therapy', label: 'Therapy' },
   { path: '/resources', label: 'Resources' },
+  { path: '/support-groups', label: 'Support Groups' }, // added
 ];
 
 const UserLayout = ({ children }) => {
@@ -16,6 +17,3 @@ const UserLayout = ({ children }) => {
 };
 
 export default UserLayout;
-
-
-

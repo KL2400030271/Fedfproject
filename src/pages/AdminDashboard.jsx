@@ -4,23 +4,39 @@ import AdminLayout from '../layouts/AdminLayout';
 import { useAuth } from '../hooks/useAuth';
 
 const AdminDashboard = () => {
-  const { currentUser, resources, sessions, users, addResource, removeResource, updateSession } =
-    useAuth();
+  const {
+    currentUser,
+    resources,
+    sessions,
+    users,
+    addResource,
+    removeResource,
+    updateSession,
+  } = useAuth();
   const [activeSection, setActiveSection] = useState('overview');
-  const [resourceForm, setResourceForm] = useState({ title: '', category: '', description: '' });
+
+  const [resourceForm, setResourceForm] = useState({
+    title: '',
+    category: '',
+    description: '',
+    link: '',
+  });
+
+  const [resourceVisibility, setResourceVisibility] = useState({
+    allStudents: true,
+    selectedUserIds: [],
+  });
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState('');
 
-  // Redirect if not admin
   if (!currentUser || currentUser.role !== 'admin') {
     return <Navigate to="/login" replace />;
   }
 
-  // Calculate statistics
   const stats = useMemo(() => {
     const totalResources = resources.length;
     const totalSessions = sessions.length;
-    const totalStudents = users.length;
+    const totalStudents = users.filter((u) => u.role === 'student').length;
     const pendingSessions = sessions.filter((s) => s.status === 'pending').length;
     const approvedSessions = sessions.filter((s) => s.status === 'approved').length;
 
@@ -44,8 +60,14 @@ const AdminDashboard = () => {
     setStatus('');
 
     try {
-      await addResource(resourceForm);
-      setResourceForm({ title: '', category: '', description: '' });
+      const visibleTo = resourceVisibility.allStudents
+        ? { type: 'all' }
+        : { type: 'users', userIds: resourceVisibility.selectedUserIds };
+
+      await addResource({ ...resourceForm, visibleTo });
+
+      setResourceForm({ title: '', category: '', description: '', link: '' });
+      setResourceVisibility({ allStudents: true, selectedUserIds: [] });
       setStatus('Resource added successfully!');
       setTimeout(() => setStatus(''), 3000);
     } catch (error) {
@@ -69,9 +91,30 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleSessionStatus = async (sessionId, newStatus) => {
+  const handleSessionStatus = async (sessionId, newStatus, currentMode) => {
+    let meetingLink;
+    let cancelReason = '';
+
+    if (newStatus === 'approved') {
+      if (currentMode === 'online') {
+        meetingLink = window.prompt('Enter Microsoft Teams meeting link:');
+      } else if (currentMode === 'offline') {
+        meetingLink = window.prompt('Paste Google Maps location link:');
+      }
+      if (!meetingLink) {
+        return;
+      }
+    }
+
+    if (newStatus === 'cancelled') {
+      cancelReason = window.prompt('Enter cancellation reason:');
+      if (!cancelReason) {
+        return;
+      }
+    }
+
     try {
-      await updateSession(sessionId, newStatus);
+      await updateSession(sessionId, newStatus, meetingLink, cancelReason);
       setStatus(`Session ${newStatus} successfully!`);
       setTimeout(() => setStatus(''), 3000);
     } catch (error) {
@@ -85,27 +128,27 @@ const AdminDashboard = () => {
         return (
           <div>
             <section className="page-section">
-              <p className="eyebrow">Administrator Dashboard</p>
-              <h2>Welcome back, {currentUser.name}!</h2>
-              <p>Manage your platform content and monitor student activity.</p>
+              <p className="eyebrow">Administrator dashboard</p>
+              <h2>Welcome back, {currentUser.name} </h2>
+              <p>Track student sessions, resources, and well‑being in one place.</p>
             </section>
 
             <section className="stats-section">
               <div className="stats-grid">
                 <div className="stat-card">
-                  <p className="stat-label">Total Resources</p>
+                  <p className="stat-label">Total resources</p>
                   <strong className="stat-value">{stats.totalResources}</strong>
                 </div>
                 <div className="stat-card">
-                  <p className="stat-label">Total Sessions</p>
+                  <p className="stat-label">Total sessions</p>
                   <strong className="stat-value">{stats.totalSessions}</strong>
                 </div>
                 <div className="stat-card">
-                  <p className="stat-label">Total Students</p>
+                  <p className="stat-label">Total students</p>
                   <strong className="stat-value">{stats.totalStudents}</strong>
                 </div>
                 <div className="stat-card">
-                  <p className="stat-label">Pending Sessions</p>
+                  <p className="stat-label">Pending sessions</p>
                   <strong className="stat-value">{stats.pendingSessions}</strong>
                 </div>
               </div>
@@ -116,14 +159,16 @@ const AdminDashboard = () => {
       case 'resources':
         return (
           <section className="page-section">
-            <h2>Manage Resources</h2>
+            <h2>Resources library</h2>
             {status && (
-              <p className={status.includes('success') ? 'form-success' : 'form-error'}>{status}</p>
+              <p className={status.includes('success') ? 'form-success' : 'form-error'}>
+                {status}
+              </p>
             )}
 
             <div className="admin-grid">
               <div>
-                <h3>Existing Resources</h3>
+                <h3>Existing resources</h3>
                 {resources.length === 0 ? (
                   <p>No resources yet. Add your first resource below.</p>
                 ) : (
@@ -163,7 +208,8 @@ const AdminDashboard = () => {
               </div>
 
               <form className="form-card" onSubmit={handleAddResource}>
-                <h3>Add New Resource</h3>
+                <h3>Add new resource</h3>
+
                 <label>
                   Title
                   <input
@@ -174,6 +220,7 @@ const AdminDashboard = () => {
                     required
                   />
                 </label>
+
                 <label>
                   Category
                   <input
@@ -185,6 +232,7 @@ const AdminDashboard = () => {
                     required
                   />
                 </label>
+
                 <label>
                   Description
                   <textarea
@@ -195,8 +243,59 @@ const AdminDashboard = () => {
                     required
                   />
                 </label>
+
+                <label>
+                  Resource link
+                  <input
+                    type="url"
+                    name="link"
+                    value={resourceForm.link}
+                    onChange={handleResourceChange}
+                    placeholder="https://example.com/article-or-video"
+                    required
+                  />
+                </label>
+
+                <label className="visibility-toggle">
+                  <span>Visible to all students</span>
+                  <input
+                    type="checkbox"
+                    checked={resourceVisibility.allStudents}
+                    onChange={(e) =>
+                      setResourceVisibility((prev) => ({
+                        ...prev,
+                        allStudents: e.target.checked,
+                        selectedUserIds: e.target.checked ? [] : prev.selectedUserIds,
+                      }))
+                    }
+                  />
+                </label>
+
+                {!resourceVisibility.allStudents && (
+                  <label>
+                    Choose specific students (name – user id)
+                    <select
+                      multiple
+                      value={resourceVisibility.selectedUserIds}
+                      onChange={(e) => {
+                        const options = Array.from(e.target.selectedOptions);
+                        const ids = options.map((opt) => opt.value);
+                        setResourceVisibility((prev) => ({ ...prev, selectedUserIds: ids }));
+                      }}
+                    >
+                      {users
+                        .filter((u) => u.role === 'student')
+                        .map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name} – {u.id}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                )}
+
                 <button type="submit" className="primary-btn" disabled={submitting}>
-                  {submitting ? 'Adding...' : 'Add Resource'}
+                  {submitting ? 'Adding...' : 'Add resource'}
                 </button>
               </form>
             </div>
@@ -206,9 +305,11 @@ const AdminDashboard = () => {
       case 'sessions':
         return (
           <section className="page-section">
-            <h2>Manage Therapy Sessions</h2>
+            <h2>Therapy sessions queue</h2>
             {status && (
-              <p className={status.includes('success') ? 'form-success' : 'form-error'}>{status}</p>
+              <p className={status.includes('success') ? 'form-success' : 'form-error'}>
+                {status}
+              </p>
             )}
 
             {sessions.length === 0 ? (
@@ -224,6 +325,7 @@ const AdminDashboard = () => {
                       <th>Time</th>
                       <th>Mode</th>
                       <th>Status</th>
+                      <th>Link</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -236,9 +338,20 @@ const AdminDashboard = () => {
                         <td>{session.time}</td>
                         <td>{session.mode}</td>
                         <td>
-                          <span className={`status-badge status-${session.status || 'pending'}`}>
+                          <span
+                            className={`status-badge status-${session.status || 'pending'}`}
+                          >
                             {session.status || 'pending'}
                           </span>
+                        </td>
+                        <td>
+                          {session.meetingLink ? (
+                            <a href={session.meetingLink} target="_blank" rel="noreferrer">
+                              Open
+                            </a>
+                          ) : (
+                            '-'
+                          )}
                         </td>
                         <td>
                           <div className="action-buttons">
@@ -247,14 +360,18 @@ const AdminDashboard = () => {
                                 <button
                                   type="button"
                                   className="approve-btn"
-                                  onClick={() => handleSessionStatus(session.id, 'approved')}
+                                  onClick={() =>
+                                    handleSessionStatus(session.id, 'approved', session.mode)
+                                  }
                                 >
                                   Approve
                                 </button>
                                 <button
                                   type="button"
                                   className="cancel-btn"
-                                  onClick={() => handleSessionStatus(session.id, 'cancelled')}
+                                  onClick={() =>
+                                    handleSessionStatus(session.id, 'cancelled', session.mode)
+                                  }
                                 >
                                   Cancel
                                 </button>
@@ -264,7 +381,9 @@ const AdminDashboard = () => {
                               <button
                                 type="button"
                                 className="cancel-btn"
-                                onClick={() => handleSessionStatus(session.id, 'cancelled')}
+                                onClick={() =>
+                                  handleSessionStatus(session.id, 'cancelled', session.mode)
+                                }
                               >
                                 Cancel
                               </button>
@@ -273,9 +392,11 @@ const AdminDashboard = () => {
                               <button
                                 type="button"
                                 className="approve-btn"
-                                onClick={() => handleSessionStatus(session.id, 'approved')}
+                                onClick={() =>
+                                  handleSessionStatus(session.id, 'approved', session.mode)
+                                }
                               >
-                                Re-approve
+                                Re‑approve
                               </button>
                             )}
                           </div>
@@ -289,11 +410,14 @@ const AdminDashboard = () => {
           </section>
         );
 
-      case 'users':
+      case 'users': {
+        const studentUsers = users.filter((u) => u.role === 'student');
+
         return (
           <section className="page-section">
-            <h2>View Users</h2>
-            {users.length === 0 ? (
+            <h2>Registered students</h2>
+            <p className="eyebrow">Only student accounts are listed here</p>
+            {studentUsers.length === 0 ? (
               <p>No students registered yet.</p>
             ) : (
               <div className="table-wrapper">
@@ -305,7 +429,7 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((user) => (
+                    {studentUsers.map((user) => (
                       <tr key={user.id}>
                         <td>{user.name}</td>
                         <td>{user.email}</td>
@@ -317,6 +441,7 @@ const AdminDashboard = () => {
             )}
           </section>
         );
+      }
 
       default:
         return null;

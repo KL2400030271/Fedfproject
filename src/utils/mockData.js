@@ -1,4 +1,7 @@
-export const usersData = [
+// mockData.js
+
+// Default users data (initial seed)
+export const defaultUsersData = [
   {
     id: 'u-100',
     name: 'Alex Student',
@@ -22,58 +25,11 @@ export const usersData = [
   },
 ];
 
-export const resourcesData = [
-  {
-    id: 'r-1',
-    title: 'Mindfulness Basics',
-    category: 'stress',
-    description: 'Simple breathing techniques to ease stress before exams.',
-  },
-  {
-    id: 'r-2',
-    title: 'Managing Anxiety',
-    category: 'anxiety',
-    description: 'Grounding exercises to stay present during anxious moments.',
-  },
-  {
-    id: 'r-3',
-    title: 'Peer Support Circles',
-    category: 'community',
-    description: 'Join weekly student-led circles to share and feel heard.',
-  },
-  {
-    id: 'r-4',
-    title: 'Sleep Hygiene Guide',
-    category: 'wellness',
-    description: 'Build a bedtime routine that helps you recharge.',
-  },
-  {
-    id: 'r-5',
-    title: 'Nutrition for Mood',
-    category: 'wellness',
-    description: 'Learn how balanced meals can stabilize energy and mood.',
-  },
-  {
-    id: 'r-6',
-    title: 'Quick Grounding Audio',
-    category: 'anxiety',
-    description: '5-minute guided audio to help calm racing thoughts.',
-  },
-  {
-    id: 'r-7',
-    title: 'Group Therapy Interest Form',
-    category: 'community',
-    description: 'Sign up to join themed peer-led support cohorts.',
-  },
-  {
-    id: 'r-8',
-    title: 'Burnout Recovery Plan',
-    category: 'stress',
-    description: 'Step-by-step workbook to reset expectations mid-semester.',
-  },
-];
+// Default resources data
+export const defaultResourcesData = [];
 
-export const sessionsData = [
+// Default sessions data
+export const defaultSessionsData = [
   {
     id: 's-1',
     userId: 'u-100',
@@ -116,5 +72,5 @@ export const sessionsData = [
   },
 ];
 
-export const createId = (prefix) => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
+export const createId = (prefix) =>
+  `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;

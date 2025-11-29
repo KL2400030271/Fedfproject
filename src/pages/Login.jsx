@@ -45,7 +45,6 @@ const Login = () => {
         <p>Sign in to continue your wellbeing journey.</p>
 
         {error && <p className="form-error">{error}</p>}
-
         {status && <p className="form-info">{status}</p>}
 
         <label>
@@ -81,10 +80,14 @@ const Login = () => {
         <button type="submit" className="primary-btn" disabled={submitting}>
           {submitting ? 'Signing in...' : 'Login'}
         </button>
+
+        <p>
+          <a href="/forgot-password">Forgot password?</a> | 
+          <a href="/register">Create account</a>
+        </p>
       </form>
     </section>
   );
 };
 
 export default Login;
-

@@ -49,7 +49,9 @@ const TherapyBooking = () => {
 
         <form className="form-card" onSubmit={handleSubmit}>
           {status.text && (
-            <p className={status.type === 'error' ? 'form-error' : 'form-success'}>{status.text}</p>
+            <p className={status.type === 'error' ? 'form-error' : 'form-success'}>
+              {status.text}
+            </p>
           )}
 
           <label>
@@ -66,12 +68,24 @@ const TherapyBooking = () => {
 
           <label>
             Preferred date
-            <input type="date" name="date" value={formData.date} onChange={handleChange} required />
+            <input
+              type="date"
+              name="date"
+              value={formData.date}
+              onChange={handleChange}
+              required
+            />
           </label>
 
           <label>
             Preferred time
-            <input type="time" name="time" value={formData.time} onChange={handleChange} required />
+            <input
+              type="time"
+              name="time"
+              value={formData.time}
+              onChange={handleChange}
+              required
+            />
           </label>
 
           <label>
@@ -101,6 +115,8 @@ const TherapyBooking = () => {
                   <th>Date</th>
                   <th>Time</th>
                   <th>Mode</th>
+                  <th>Status</th>
+                  <th>Link</th>
                 </tr>
               </thead>
               <tbody>
@@ -110,10 +126,37 @@ const TherapyBooking = () => {
                     <td>{session.date}</td>
                     <td>{session.time}</td>
                     <td>{session.mode}</td>
+                    <td>
+                      <span className={`status-badge status-${session.status || 'pending'}`}>
+                        {session.status || 'pending'}
+                      </span>
+                    </td>
+                    <td>
+                      {session.meetingLink && session.status === 'approved' ? (
+                        <a href={session.meetingLink} target="_blank" rel="noreferrer">
+                          Open
+                        </a>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+
+            {mySessions.map((session) => (
+              session.status === 'cancelled' && session.cancelReason && (
+                <div key={session.id} className="cancellation-notice">
+                  <p>
+                    <strong>Session cancelled:</strong> {session.topic} on {session.date}
+                  </p>
+                  <p className="form-error">
+                    <strong>Reason:</strong> {session.cancelReason}
+                  </p>
+                </div>
+              )
+            ))}
           </div>
         )}
       </section>
@@ -122,4 +165,3 @@ const TherapyBooking = () => {
 };
 
 export default TherapyBooking;
-

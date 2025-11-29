@@ -1,53 +1,45 @@
-import { useMemo, useState } from 'react';
-import ResourceCard from '../components/ResourceCard';
 import { useAuth } from '../hooks/useAuth';
+import UserLayout from '../layouts/UserLayout';
+import ResourceCard from '../components/ResourceCard';
 
 const Resources = () => {
-  const { resources } = useAuth();
-  const [category, setCategory] = useState('all');
+  const { resources, currentUser } = useAuth();
 
-  const categories = useMemo(() => {
-    const uniqueCategories = new Set(resources.map((resource) => resource.category));
-    return ['all', ...uniqueCategories];
-  }, [resources]);
+  const visibleResources = resources.filter((resource) => {
+    if (!resource.visibleTo) return true;
+    if (resource.visibleTo.type === 'all') return true;
+    if (resource.visibleTo.type === 'users') {
+      return resource.visibleTo.userIds.includes(currentUser.id);
+    }
+    return false;
+  });
 
-  const visibleResources = useMemo(() => {
-    if (category === 'all') return resources;
-    return resources.filter((resource) => resource.category === category);
-  }, [category, resources]);
+  console.log('visibleResources', visibleResources); // put it HERE
 
   return (
-    <section className="resources-page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">Self-guided care</p>
-          <h2>Curated mental health resources</h2>
-          <p>Browse guides, toolkits, and community programs built for students.</p>
-        </div>
-        <label className="select-field">
-          Filter by category
-          <select value={category} onChange={(event) => setCategory(event.target.value)}>
-            {categories.map((option) => (
-              <option key={option} value={option}>
-                {option.charAt(0).toUpperCase() + option.slice(1)}
-              </option>
-            ))}
-          </select>
-        </label>
-      </header>
+    <UserLayout>
+      <section className="page-section">
+        <h2>Resources</h2>
+        <p>Explore helpful articles, videos, and tools.</p>
 
-      <div className="resource-grid">
         {visibleResources.length === 0 ? (
-          <p>No resources match that category yet.</p>
+          <p>No resources available yet.</p>
         ) : (
-          visibleResources.map((resource) => <ResourceCard key={resource.id} {...resource} />)
+          <div className="resources-grid">
+            {visibleResources.map((res) => (
+              <ResourceCard
+                key={res.id}
+                title={res.title}
+                category={res.category}
+                description={res.description}
+                link={res.link}
+              />
+            ))}
+          </div>
         )}
-      </div>
-    </section>
+      </section>
+    </UserLayout>
   );
 };
 
 export default Resources;
-
-
-
