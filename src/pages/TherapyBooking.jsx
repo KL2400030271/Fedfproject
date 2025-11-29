@@ -1,0 +1,125 @@
+import { useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import UserLayout from '../layouts/UserLayout';
+
+const initialForm = {
+  topic: '',
+  date: '',
+  time: '',
+  mode: 'online',
+};
+
+const TherapyBooking = () => {
+  const { addSession, sessions, currentUser } = useAuth();
+  const [formData, setFormData] = useState(initialForm);
+  const [status, setStatus] = useState({ type: '', text: '' });
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setStatus({ type: '', text: '' });
+
+    try {
+      await addSession(formData);
+      setFormData(initialForm);
+      setStatus({
+        type: 'success',
+        text: 'Session booked! A counselor will reach out with next steps.',
+      });
+    } catch (error) {
+      setStatus({ type: 'error', text: error.message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const mySessions = sessions.filter((session) => session.userId === currentUser?.id);
+
+  return (
+    <UserLayout>
+      <section className="page-section">
+        <h2>Book a therapy session</h2>
+        <p>Let us know what you need support with and pick a time that works.</p>
+
+        <form className="form-card" onSubmit={handleSubmit}>
+          {status.text && (
+            <p className={status.type === 'error' ? 'form-error' : 'form-success'}>{status.text}</p>
+          )}
+
+          <label>
+            Topic or concern
+            <input
+              type="text"
+              name="topic"
+              value={formData.topic}
+              onChange={handleChange}
+              placeholder="e.g. Anxiety before exams"
+              required
+            />
+          </label>
+
+          <label>
+            Preferred date
+            <input type="date" name="date" value={formData.date} onChange={handleChange} required />
+          </label>
+
+          <label>
+            Preferred time
+            <input type="time" name="time" value={formData.time} onChange={handleChange} required />
+          </label>
+
+          <label>
+            Mode
+            <select name="mode" value={formData.mode} onChange={handleChange}>
+              <option value="online">Online</option>
+              <option value="offline">Offline</option>
+            </select>
+          </label>
+
+          <button type="submit" className="primary-btn" disabled={submitting}>
+            {submitting ? 'Booking...' : 'Book Session'}
+          </button>
+        </form>
+      </section>
+
+      <section className="page-section">
+        <h3>My booked sessions</h3>
+        {mySessions.length === 0 ? (
+          <p>You have not scheduled any sessions yet.</p>
+        ) : (
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Topic</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Mode</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mySessions.map((session) => (
+                  <tr key={session.id}>
+                    <td>{session.topic}</td>
+                    <td>{session.date}</td>
+                    <td>{session.time}</td>
+                    <td>{session.mode}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </UserLayout>
+  );
+};
+
+export default TherapyBooking;
+
