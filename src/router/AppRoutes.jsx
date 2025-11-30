@@ -1,93 +1,54 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { Routes, Route } from 'react-router-dom';
+import Home from '../pages/Home';
+import Login from '../pages/Login';
+import Register from '../pages/Register';
+import ForgotPassword from '../pages/ForgotPassword';
+import AboutMe from '../pages/AboutMe';
+import Resources from '../pages/Resources';
+import TherapyBooking from '../pages/TherapyBooking';
+import UserDashboard from '../pages/UserDashboard';
+import AdminDashboard from '../pages/AdminDashboard';
+import NotFound from '../pages/NotFound';
+import PrivateRoute from '../protected/PrivateRoute';
+import SupportGroups from '../pages/SupportGroups';
 
-const Login = () => {
-  const navigate = useNavigate();
-  const { login } = useAuth();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    role: 'student',
-  });
-  const [error, setError] = useState('');
-  const [status, setStatus] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setSubmitting(true);
-    setError('');
-    setStatus('');
-
-    try {
-      const user = await login(formData);
-      setStatus(`Welcome back, ${user.name}! Redirecting you now...`);
-      setTimeout(() => {
-        navigate(user.role === 'admin' ? '/admin' : '/dashboard');
-        setSubmitting(false);
-      }, 900);
-    } catch (err) {
-      setError(err.message);
-      setSubmitting(false);
-    }
-  };
-
+const AppRoutes = () => {
   return (
-    <section className="auth-page">
-      <form className="form-card" onSubmit={handleSubmit}>
-        <h2>Welcome back</h2>
-        <p>Sign in to continue your wellbeing journey.</p>
-
-        {error && <p className="form-error">{error}</p>}
-        {status && <p className="form-info">{status}</p>}
-
-        <label>
-          Email
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </label>
-
-        <label>
-          Password
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </label>
-
-        <label>
-          Login as
-          <select name="role" value={formData.role} onChange={handleChange}>
-            <option value="student">Student</option>
-            <option value="admin">Admin</option>
-          </select>
-        </label>
-
-        <button type="submit" className="primary-btn" disabled={submitting}>
-          {submitting ? 'Signing in...' : 'Login'}
-        </button>
-
-        <p>
-          <Link to="/forgot-password">Forgot password?</Link> | 
-          <Link to="/register">Create account</Link>
-        </p>
-      </form>
-    </section>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/aboutme" element={<AboutMe />} />
+      <Route path="/resources" element={<Resources />} />
+      
+      <Route path="/dashboard" element={
+        <PrivateRoute allowedRoles={['student']}>
+          <UserDashboard />
+        </PrivateRoute>
+      } />
+      
+      <Route path="/therapy" element={
+        <PrivateRoute allowedRoles={['student']}>
+          <TherapyBooking />
+        </PrivateRoute>
+      } />
+      
+      <Route path="/support-groups" element={
+        <PrivateRoute allowedRoles={['student']}>
+          <SupportGroups />
+        </PrivateRoute>
+      } />
+      
+      <Route path="/admin" element={
+        <PrivateRoute allowedRoles={['admin']}>
+          <AdminDashboard />
+        </PrivateRoute>
+      } />
+      
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 
-export default Login;
+export default AppRoutes;
