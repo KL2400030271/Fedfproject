@@ -25,6 +25,19 @@ const TherapyBooking = () => {
     setSubmitting(true);
     setStatus({ type: '', text: '' });
 
+    // Validate date and time are in future
+    const selectedDateTime = new Date(`${formData.date}T${formData.time}`);
+    const now = new Date();
+
+    if (selectedDateTime <= now) {
+      setStatus({
+        type: 'error',
+        text: 'Please select a future date and time. Past dates are not allowed.',
+      });
+      setSubmitting(false);
+      return;
+    }
+
     try {
       await addSession(formData);
       setFormData(initialForm);

@@ -1,66 +1,93 @@
-import { Routes, Route } from 'react-router-dom';
-import Home from '../pages/Home';
-import Login from '../pages/Login';
-import Register from '../pages/Register';
-import ForgotPassword from '../pages/ForgotPassword';
-import AboutMe from '../pages/AboutMe';
-import Resources from '../pages/Resources';
-import TherapyBooking from '../pages/TherapyBooking';
-import UserDashboard from '../pages/UserDashboard';
-import AdminDashboard from '../pages/AdminDashboard';
-import NotFound from '../pages/NotFound';
-import PrivateRoute from '../protected/PrivateRoute';
-import SupportGroups from '../pages/SupportGroups';
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
-const AppRoutes = () => {
+const Login = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    role: 'student',
+  });
+  const [error, setError] = useState('');
+  const [status, setStatus] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError('');
+    setStatus('');
+
+    try {
+      const user = await login(formData);
+      setStatus(`Welcome back, ${user.name}! Redirecting you now...`);
+      setTimeout(() => {
+        navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+        setSubmitting(false);
+      }, 900);
+    } catch (err) {
+      setError(err.message);
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/aboutme" element={<AboutMe />} />
-      <Route path="/resources" element={<Resources />} />
+    <section className="auth-page">
+      <form className="form-card" onSubmit={handleSubmit}>
+        <h2>Welcome back</h2>
+        <p>Sign in to continue your wellbeing journey.</p>
 
-      <Route
-        path="/dashboard"
-        element={
-          <PrivateRoute allowedRoles={['student']}>
-            <UserDashboard />
-          </PrivateRoute>
-        }
-      />
+        {error && <p className="form-error">{error}</p>}
+        {status && <p className="form-info">{status}</p>}
 
-      <Route
-        path="/therapy"
-        element={
-          <PrivateRoute allowedRoles={['student']}>
-            <TherapyBooking />
-          </PrivateRoute>
-        }
-      />
+        <label>
+          Email
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+        </label>
 
-      <Route
-        path="/support-groups"
-        element={
-          <PrivateRoute allowedRoles={['student']}>
-            <SupportGroups />
-          </PrivateRoute>
-        }
-      />
+        <label>
+          Password
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
+        </label>
 
-      <Route
-        path="/admin"
-        element={
-          <PrivateRoute allowedRoles={['admin']}>
-            <AdminDashboard />
-          </PrivateRoute>
-        }
-      />
+        <label>
+          Login as
+          <select name="role" value={formData.role} onChange={handleChange}>
+            <option value="student">Student</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
 
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <button type="submit" className="primary-btn" disabled={submitting}>
+          {submitting ? 'Signing in...' : 'Login'}
+        </button>
+
+        <p>
+          <Link to="/forgot-password">Forgot password?</Link> | 
+          <Link to="/register">Create account</Link>
+        </p>
+      </form>
+    </section>
   );
 };
 
-export default AppRoutes;
+export default Login;
